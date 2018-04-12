@@ -30,17 +30,18 @@ import org.eclipse.che.api.core.ServerException;
 @Singleton
 class ZipArchiver {
 
-  private static void zip(File zipInFile, String fileName, ZipOutputStream zos) throws IOException {
+  private static void zip(Path zipRoot, File zipInFile, ZipOutputStream zos) throws IOException {
     if (zipInFile.isDirectory()) {
       File[] files = zipInFile.listFiles();
       for (File file : files == null ? new File[0] : files) {
-        zip(file, file.getAbsolutePath(), zos);
+        zip(zipRoot, file, zos);
       }
       return;
     }
 
     try (FileInputStream fis = new FileInputStream(zipInFile); ) {
-      ZipEntry zipEntry = new ZipEntry(fileName);
+      String zipEntryName = zipRoot.relativize(zipInFile.toPath()).toString();
+      ZipEntry zipEntry = new ZipEntry(zipEntryName);
       zos.putNextEntry(zipEntry);
       IOUtils.copy(fis, zos);
     }
@@ -53,7 +54,7 @@ class ZipArchiver {
 
       try (FileOutputStream fos = new FileOutputStream(outFile);
           ZipOutputStream zos = new ZipOutputStream(fos)) {
-        zip(inFile, inFile.getName(), zos);
+        zip(fsPath, inFile, zos);
       }
 
       return newInputStream(outFile.toPath());
